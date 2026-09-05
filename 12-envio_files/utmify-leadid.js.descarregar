@@ -1,0 +1,87 @@
+(function () {
+  var POLL_MS = 500;
+  var MAX_TRIES = 40;
+  var UTM_SEP = 'jLj';
+  var XCOD_SEP = 'hQwK21wXxR';
+  var STORAGE_KEY = { FB: 'lead', google: 'lead-google' };
+
+  function getOrigin(utmSource) {
+    if (!utmSource) return null;
+    var base = String(utmSource).split(UTM_SEP)[0];
+    return base === 'FB' || base === 'google' ? base : null;
+  }
+
+  function getLeadIdFromStorage(origin) {
+    var key = STORAGE_KEY[origin];
+    if (!key) return null;
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      return obj && obj._id ? String(obj._id) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function resolveLeadId(utmSource, origin) {
+    var prefix = origin + UTM_SEP;
+    if (utmSource && utmSource.indexOf(prefix) === 0) {
+      var id = utmSource.slice(prefix.length);
+      if (id) return id;
+    }
+    return getLeadIdFromStorage(origin);
+  }
+
+  function applyIfNeeded() {
+    var url = new URL(window.location.href);
+    var currentSource = url.searchParams.get('utm_source');
+    var origin = getOrigin(currentSource);
+    if (!origin) return 'skip';
+
+    var id = resolveLeadId(currentSource, origin);
+    if (!id) return 'pending';
+
+    var desired = origin + UTM_SEP + id;
+    var changed = false;
+
+    if (currentSource !== desired) {
+      url.searchParams.set('utm_source', desired);
+      changed = true;
+    }
+
+    var currentXcod = url.searchParams.get('xcod');
+    if (currentXcod) {
+      var parts = currentXcod.split(XCOD_SEP);
+      if (parts[0] !== desired) {
+        parts[0] = desired;
+        url.searchParams.set('xcod', parts.join(XCOD_SEP));
+        changed = true;
+      }
+    }
+
+    if (!changed) return 'done';
+
+    window.location.replace(url.toString());
+    return 'redirected';
+  }
+
+  try {
+    var status = applyIfNeeded();
+    if (status === 'pending') {
+      var tries = 0;
+      var interval = setInterval(function () {
+        tries++;
+        var s;
+        try {
+          s = applyIfNeeded();
+        } catch (e) {
+          s = 'skip';
+        }
+        if (s !== 'pending' || tries >= MAX_TRIES) {
+          clearInterval(interval);
+        }
+      }, POLL_MS);
+    }
+  } catch (e) {}
+})();

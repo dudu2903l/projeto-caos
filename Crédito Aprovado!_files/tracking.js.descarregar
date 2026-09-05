@@ -1,0 +1,180 @@
+(function () {
+  function generateRandomId(length) {
+    var len = length || 8;
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = '';
+    for (var i = 0; i < len; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  function tryOrganicRedirect() {
+    try {
+      var u = new URL(window.location.href);
+      if (!u.searchParams.has('utm_source')) {
+        u.searchParams.set('utm_source', 'organic' + generateRandomId(8));
+        u.searchParams.set('utm_medium', 'direct');
+        u.searchParams.set('utm_campaign', 'ml-cart');
+        u.searchParams.set('utm_content', 'organic');
+        u.searchParams.set('utm_term', 'entrada');
+        window.location.replace(u.toString());
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  if (tryOrganicRedirect()) {
+    return;
+  }
+
+  function isJunkQueryKey(key) {
+    var kl = String(key).toLowerCase();
+    if (kl === 'xcod' || kl === 'sck') {
+      return true;
+    }
+    if (kl === 'subid' || kl === 'sid2') {
+      return true;
+    }
+    if (/^subid\d+$/.test(kl)) {
+      return true;
+    }
+    return false;
+  }
+
+  function captureUrlParameters() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var params = {};
+    var k;
+    urlParams.forEach(function (value, key) {
+      if (!isJunkQueryKey(key)) {
+        params[key] = value;
+      }
+    });
+    var searchString = window.location.search;
+    if (searchString) {
+      var pairs = searchString.substring(1).split('&');
+      pairs.forEach(function (pair) {
+        var eq = pair.indexOf('=');
+        var key = eq >= 0 ? pair.slice(0, eq) : pair;
+        var value = eq >= 0 ? pair.slice(eq + 1) : '';
+        if (key && !isJunkQueryKey(key) && !Object.prototype.hasOwnProperty.call(params, key)) {
+          try {
+            params[key] = decodeURIComponent(value.replace(/\+/g, ' '));
+          } catch (err) {
+            params[key] = value;
+          }
+        }
+      });
+    }
+    try {
+      localStorage.setItem('urlParams', JSON.stringify(params));
+    } catch (e) {}
+    return params;
+  }
+
+  function getSavedParameters() {
+    try {
+      var savedParams = localStorage.getItem('urlParams');
+      return savedParams ? JSON.parse(savedParams) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function buildUrlWithParams(baseUrl) {
+    var currentUrlParams = new URLSearchParams(window.location.search);
+    var savedParams = getSavedParameters();
+    var queryParams = new URLSearchParams();
+    var utmParams = [
+      'utm_source',
+      'utm_medium',
+      'utm_campaign',
+      'utm_content',
+      'utm_term',
+      'src',
+      'gclid',
+      'fbclid',
+      'ttclid',
+    ];
+    var allParams = {};
+    currentUrlParams.forEach(function (value, key) {
+      if (!isJunkQueryKey(key)) {
+        allParams[key] = value;
+      }
+    });
+    for (var key2 in savedParams) {
+      if (
+        Object.prototype.hasOwnProperty.call(savedParams, key2) &&
+        !isJunkQueryKey(key2) &&
+        !Object.prototype.hasOwnProperty.call(allParams, key2)
+      ) {
+        allParams[key2] = savedParams[key2];
+      }
+    }
+    for (var k2 in allParams) {
+      if (!Object.prototype.hasOwnProperty.call(allParams, k2)) continue;
+      if (isJunkQueryKey(k2)) continue;
+      var val = allParams[k2];
+      if (utmParams.indexOf(k2) !== -1 || val) {
+        queryParams.append(k2, val || '');
+      }
+    }
+    var queryString = queryParams.toString();
+    return queryString ? baseUrl + '?' + queryString : baseUrl;
+  }
+
+  function getTrackingParametersObject() {
+    var merged = {};
+    var cur = new URLSearchParams(window.location.search);
+    cur.forEach(function (value, key) {
+      if (!isJunkQueryKey(key)) {
+        merged[key] = value;
+      }
+    });
+    var saved = getSavedParameters();
+    var k;
+    for (k in saved) {
+      if (
+        Object.prototype.hasOwnProperty.call(saved, k) &&
+        !isJunkQueryKey(k) &&
+        !Object.prototype.hasOwnProperty.call(merged, k)
+      ) {
+        merged[k] = saved[k];
+      }
+    }
+    return {
+      src: merged.src || null,
+      sck: null,
+      utm_source: merged.utm_source || null,
+      utm_campaign: merged.utm_campaign || null,
+      utm_medium: merged.utm_medium || null,
+      utm_content: merged.utm_content || null,
+      utm_term: merged.utm_term || null,
+      gclid: merged.gclid || null,
+      fbclid: merged.fbclid || null,
+      ttclid: merged.ttclid || null,
+    };
+  }
+
+  window.MLTracking = {
+    captureUrlParameters: captureUrlParameters,
+    getSavedParameters: getSavedParameters,
+    buildUrlWithParams: buildUrlWithParams,
+    getTrackingParametersObject: getTrackingParametersObject,
+  };
+
+  window.captureUrlParameters = captureUrlParameters;
+  window.getSavedParameters = getSavedParameters;
+  window.buildUrlWithParams = buildUrlWithParams;
+
+  function boot() {
+    captureUrlParameters();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+})();

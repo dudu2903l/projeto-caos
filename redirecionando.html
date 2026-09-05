@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagamento confirmado</title>
+    <style>
+        :root {
+            --yellow: #ffe600;
+            --ink: #111111;
+            --muted: #64748b;
+            --green: #16a34a;
+            --surface: #ffffff;
+            --background: #f5f5f5;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--ink);
+            background: var(--background);
+            font-family: Arial, sans-serif;
+        }
+
+        header {
+            padding: 4px 20px;
+            text-align: center;
+            background: var(--yellow);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        header img { width: auto; height: 64px; }
+
+        main {
+            width: min(100% - 32px, 480px);
+            margin: auto;
+            padding: 32px 0;
+        }
+
+        .panel {
+            padding: 32px 24px;
+            text-align: center;
+            background: var(--surface);
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+        }
+
+        .check {
+            width: 64px;
+            height: 64px;
+            display: grid;
+            place-items: center;
+            margin: 0 auto 20px;
+            color: #fff;
+            background: var(--green);
+            border-radius: 50%;
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        h1 { margin: 0 0 12px; font-size: 1.6rem; }
+        .intro { margin: 0 auto 24px; color: var(--muted); line-height: 1.55; }
+
+        .status {
+            padding: 16px;
+            text-align: left;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+        }
+
+        .status strong { display: block; margin-bottom: 6px; }
+        .status span { color: var(--muted); font-size: 0.92rem; line-height: 1.45; }
+
+        footer {
+            padding: 24px 16px;
+            color: #64748b;
+            text-align: center;
+            font-size: 0.78rem;
+        }
+
+        @media (max-width: 380px) {
+            header img { height: 50px; }
+            .panel { padding: 28px 18px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="./pagamento_files/logo.png" alt="Logo">
+    </header>
+
+    <main>
+        <section class="panel" aria-labelledby="page-title">
+            <div class="check" aria-hidden="true">&#10003;</div>
+            <h1 id="page-title">Pagamento confirmado</h1>
+            <p class="intro">Recebemos o pagamento. Seu pedido está em preparação e será atualizado quando houver informações de envio.</p>
+            <div class="status">
+                <strong>Status do pedido</strong>
+                <span>Em preparação para envio</span>
+            </div>
+        </section>
+    </main>
+
+    <footer>Você receberá as informações de rastreio quando o envio for registrado.</footer>
+</body>
+</html>
