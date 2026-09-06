@@ -1,4 +1,4 @@
-const SHARPIFY_BASE_URL = 'https://sharpify-pay.com';
+const LARANJINHA_BASE_URL = process.env.LARANJINHA_BASE_URL || 'https://mqvdjjbkjglaimbnpcer.supabase.co/functions/v1/api-proxy';
 
 module.exports = async function handler(request, response) {
     if (request.method !== 'GET') {
@@ -12,23 +12,21 @@ module.exports = async function handler(request, response) {
         return;
     }
 
-    if (!process.env.SHARPIFY_CLIENT_ID || !process.env.SHARPIFY_CLIENT_SECRET) {
-        response.status(500).json({ success: false, message: 'Credenciais Sharpify não configuradas' });
+    if (!process.env.LARANJINHA_API_KEY) {
+        response.status(500).json({ success: false, message: 'Credencial da API PIX não configurada' });
         return;
     }
 
-    const url = new URL(`${SHARPIFY_BASE_URL}/api/v1/gateway/payment/get-payment`);
-    url.searchParams.set('paymentLinkId', paymentLinkId);
+    const url = new URL(`${LARANJINHA_BASE_URL}/charges/${encodeURIComponent(paymentLinkId)}`);
 
     try {
-        const sharpifyResponse = await fetch(url, {
+        const laranjinhaResponse = await fetch(url, {
             headers: {
-                'x-sharpify-client-id': process.env.SHARPIFY_CLIENT_ID,
-                'x-sharpify-client-secret': process.env.SHARPIFY_CLIENT_SECRET,
+                'X-API-Key': process.env.LARANJINHA_API_KEY,
                 Accept: 'application/json'
             }
         });
-        const text = await sharpifyResponse.text();
+        const text = await laranjinhaResponse.text();
         let payload;
         try {
             payload = JSON.parse(text);
@@ -36,22 +34,22 @@ module.exports = async function handler(request, response) {
             payload = { message: text };
         }
 
-        if (!sharpifyResponse.ok) {
-            response.status(sharpifyResponse.status).json({
+        if (!laranjinhaResponse.ok) {
+            response.status(laranjinhaResponse.status).json({
                 success: false,
                 message: payload.message || 'Não foi possível consultar o pagamento'
             });
             return;
         }
 
-        const paymentLink = payload.data || payload;
+        const charge = payload.charge || payload;
         response.status(200).json({
             success: true,
-            paid: paymentLink.status === 'APPROVED',
-            status: paymentLink.status,
-            transaction_id: paymentLink.id
+            paid: charge.status === 'paid',
+            status: charge.status,
+            transaction_id: charge.id
         });
     } catch (error) {
-        response.status(502).json({ success: false, message: 'Não foi possível conectar à Sharpify' });
+        response.status(502).json({ success: false, message: 'Não foi possível conectar à API PIX' });
     }
 };
